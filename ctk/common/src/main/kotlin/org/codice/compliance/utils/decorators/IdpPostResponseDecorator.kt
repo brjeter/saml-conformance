@@ -14,17 +14,17 @@
 package org.codice.compliance.utils.decorators
 
 import de.jupf.staticlog.Log
+import org.apache.commons.lang3.StringUtils.isNotEmpty
 import org.apache.cxf.rs.security.saml.sso.SSOConstants.RELAY_STATE
 import org.apache.cxf.rs.security.saml.sso.SSOConstants.SAML_RESPONSE
+import org.codice.compliance.attributeText
+import org.codice.compliance.children
 import org.codice.compliance.debugWithSupplier
 import org.codice.compliance.prettyPrintXml
 import org.codice.compliance.saml.plugin.IdpPostResponse
-import org.codice.compliance.utils.TestCommon.Companion.acsUrl
 import org.codice.compliance.verification.binding.BindingVerifier
 import org.codice.compliance.verification.binding.PostBindingVerifier
-import org.codice.security.saml.SamlProtocol
-import com.jayway.restassured.path.xml.element.Node as raNode
-import org.w3c.dom.Node as w3Node
+import org.w3c.dom.Node
 
 /**
  * This class can only be instantiated by using extension methods in IdpResponseDecorator.kt
@@ -32,11 +32,7 @@ import org.w3c.dom.Node as w3Node
 class IdpPostResponseDecorator
 internal constructor(response: IdpPostResponse) : IdpPostResponse(response), IdpResponseDecorator {
     companion object {
-        private const val HIDDEN = "hidden"
-        private const val TYPE = "type"
-        private const val ACTION = "action"
-        private const val METHOD = "method"
-        private const val POST = "POST"
+        private const val VALUE = "value"
     }
 
     init {
@@ -45,80 +41,40 @@ internal constructor(response: IdpPostResponse) : IdpPostResponse(response), Idp
         }
     }
 
+    // Bindings 3.5.4 "If the message is a SAML response, then the form control MUST be named
+    // SAMLResponse."
+    val samlResponseFormControl: Node? = responseForm?.children("input")
+            ?.firstOrNull({ SAML_RESPONSE.equals(it.attributeText(NAME), ignoreCase = true) })
+
+    // Bindings 3.5.4 "If a “RelayState” value is to accompany the SAML protocol message, it MUST be
+    // placed in an additional **hidden** form control named RelayState within the same form with
+    // the SAML message"
+    val relayStateFormControl: Node? = responseForm?.children("input")
+            ?.firstOrNull({ RELAY_STATE.equals(it.attributeText(NAME), ignoreCase = true) })
+
+    val samlResponseString: String? = extractValue(samlResponseFormControl)
+
+    // Overridden by tests if relay state was provided in the SAML request.
     override var isRelayStateGiven: Boolean = false
     override lateinit var decodedSamlResponse: String
 
-    override val responseDom: w3Node by lazy {
+    override val responseDom: Node by lazy {
         checkNotNull(decodedSamlResponse)
         buildDom(decodedSamlResponse)
     }
 
-    val isResponseFormNull: Boolean by lazy {
-        responseForm == null
-    }
-    val isSamlResponseFormNull: Boolean by lazy {
-        samlResponseFormControl == null
-    }
-    val isRelayStateFormNull: Boolean by lazy {
-        relayStateFormControl == null
-    }
-
-    val isSamlResponseNameCorrect: Boolean by lazy {
-        checkNodeAttribute(samlResponseFormControl, NAME, SAML_RESPONSE)
-    }
-
-    /*
-     * Bindings 3.5.4 "The action attribute of the form MUST be the recipient's HTTP endpoint for
-     * the protocol or profile using this binding to which the SAML message is to be delivered.
-     * The method attribute MUST be "POST"."
-     */
-    val isFormActionCorrect: Boolean by lazy {
-        checkNodeAttribute(responseForm,
-                ACTION,
-                checkNotNull(acsUrl[SamlProtocol.Binding.HTTP_POST]))
-    }
-
-    val isFormMethodCorrect: Boolean by lazy {
-        checkNodeAttribute(responseForm, METHOD, POST)
-    }
-
-    /*
-     * Bindings 3.5.4 "A SAML protocol message is form-encoded by... placing the result **in** a
-     * **hidden** form control within a form as defined by [HTML401] Section 17"
-     *
-     * The two key words here are "in" and "hidden"
-     *
-     * Assuming "in" in the above quote means in either the value attribute or in the value
-     * itself.
-     *
-     * And "hidden" means both the SAMLResponse and RelayState MUST be placed in "hidden" form
-     * controls
-     */
-    val isSamlResponseHidden: Boolean by lazy {
-        checkNodeAttributeIgnoreCase(samlResponseFormControl, TYPE, HIDDEN)
-    }
-    val isRelayStateNameCorrect: Boolean by lazy {
-        require(isRelayStateGiven)
-        checkNodeAttribute(relayStateFormControl, NAME, RELAY_STATE)
-    }
-    val isRelayStateHidden: Boolean by lazy {
-        require(isRelayStateGiven)
-        checkNodeAttributeIgnoreCase(relayStateFormControl, TYPE, HIDDEN)
-    }
-
-    private fun checkNodeAttribute(node: raNode,
-                                   attributeName: String,
-                                   expectedValue: String): Boolean {
-        return expectedValue == node.getAttribute(attributeName)
-    }
-
-    private fun checkNodeAttributeIgnoreCase(node: raNode,
-                                             attributeName: String,
-                                             expectedValue: String): Boolean {
-        return expectedValue.equals(node.getAttribute(attributeName), true)
-    }
+    val relayStateString: String? = extractValue(relayStateFormControl)
 
     override fun bindingVerifier(): BindingVerifier {
         return PostBindingVerifier(this)
+    }
+
+    private fun extractValue(node: org.w3c.dom.Node?): String? {
+        return node?.let {
+            if (isNotEmpty(it.textContent))
+                it.textContent
+            else
+                it.attributeText(VALUE)
+        }
     }
 }

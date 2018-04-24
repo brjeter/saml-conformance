@@ -89,6 +89,7 @@ class Common {
         /**
          * Generates an xml document from an input string
          */
+        @JvmStatic
         fun buildDom(inputXml: String): Node {
             return DocumentBuilderFactory.newInstance().apply {
                 isNamespaceAware = true
