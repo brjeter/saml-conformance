@@ -55,6 +55,5 @@ abstract class BindingVerifier {
         }
     }
 
-    abstract fun verifyError()
     abstract fun verify()
 }

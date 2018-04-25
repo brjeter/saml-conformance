@@ -52,7 +52,7 @@ class PostSSOErrorTest : StringSpec() {
             val response = sendPostAuthnRequest(encodedRequest)
 
             val idpResponse = parseErrorResponse(response)
-            idpResponse.bindingVerifier().verifyError()
+            idpResponse.bindingErrorVerifier().verify()
 
             val responseDom = idpResponse.responseDom
             CoreVerifier.verifyErrorStatusCode(responseDom, samlErrorCode = SAMLBindings_3_5_3_a,
@@ -69,7 +69,7 @@ class PostSSOErrorTest : StringSpec() {
             BindingVerifier.verifyHttpStatusCode(response.statusCode)
 
             val idpResponse = parseErrorResponse(response)
-            idpResponse.bindingVerifier().verifyError()
+            idpResponse.bindingErrorVerifier().verify()
 
             val responseDom = idpResponse.responseDom
             CoreVerifier.verifyErrorStatusCode(responseDom, samlErrorCode = SAMLProfiles_4_1_4_1_a,
@@ -88,7 +88,7 @@ class PostSSOErrorTest : StringSpec() {
             BindingVerifier.verifyHttpStatusCode(response.statusCode)
 
             val idpResponse = parseErrorResponse(response)
-            idpResponse.bindingVerifier().verifyError()
+            idpResponse.bindingErrorVerifier().verify()
 
             val responseDom = idpResponse.responseDom
             CoreVerifier.verifyErrorStatusCode(responseDom, samlErrorCode = SAMLProfiles_4_1_4_1_b,
@@ -108,7 +108,7 @@ class PostSSOErrorTest : StringSpec() {
             BindingVerifier.verifyHttpStatusCode(response.statusCode)
 
             val idpResponse = parseErrorResponse(response)
-            idpResponse.bindingVerifier().verifyError()
+            idpResponse.bindingErrorVerifier().verify()
 
             // DDF returns a valid response to the incorrect url
         }.config(enabled = false)
@@ -124,7 +124,7 @@ class PostSSOErrorTest : StringSpec() {
 
             BindingVerifier.verifyHttpStatusCode(response.statusCode)
             val idpResponse = parseErrorResponse(response)
-            idpResponse.bindingVerifier().verifyError()
+            idpResponse.bindingErrorVerifier().verify()
 
             val responseDom = idpResponse.responseDom
             CoreVerifier.verifyErrorStatusCode(responseDom, samlErrorCode = SAMLCore_3_2_1_e,

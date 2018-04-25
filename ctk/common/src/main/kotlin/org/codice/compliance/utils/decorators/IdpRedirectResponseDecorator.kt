@@ -19,6 +19,7 @@ import org.apache.cxf.rs.security.saml.sso.SSOConstants.SIGNATURE
 import org.apache.cxf.rs.security.saml.sso.SSOConstants.SIG_ALG
 import org.codice.compliance.saml.plugin.IdpRedirectResponse
 import org.codice.compliance.verification.binding.BindingVerifier
+import org.codice.compliance.verification.binding.RedirectBindingErrorVerifier
 import org.codice.compliance.verification.binding.RedirectBindingVerifier
 import org.w3c.dom.Node
 
@@ -69,5 +70,9 @@ internal constructor(response: IdpRedirectResponse) : IdpRedirectResponse(respon
 
     override fun bindingVerifier(): BindingVerifier {
         return RedirectBindingVerifier(this)
+    }
+
+    override fun bindingErrorVerifier(): BindingVerifier {
+        return RedirectBindingErrorVerifier(this)
     }
 }

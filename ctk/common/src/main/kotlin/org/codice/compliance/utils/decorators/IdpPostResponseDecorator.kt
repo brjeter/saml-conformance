@@ -23,6 +23,7 @@ import org.codice.compliance.debugWithSupplier
 import org.codice.compliance.prettyPrintXml
 import org.codice.compliance.saml.plugin.IdpPostResponse
 import org.codice.compliance.verification.binding.BindingVerifier
+import org.codice.compliance.verification.binding.PostBindingErrorVerifier
 import org.codice.compliance.verification.binding.PostBindingVerifier
 import org.w3c.dom.Node
 
@@ -39,20 +40,8 @@ internal constructor(response: IdpPostResponse) : IdpPostResponse(response), Idp
         Log.debugWithSupplier {
             restAssuredResponse?.then()?.extract()?.body()?.asString()?.prettyPrintXml() ?: ""
         }
+        responseForm?.let { parseAndSetFormValues() }
     }
-
-    // Bindings 3.5.4 "If the message is a SAML response, then the form control MUST be named
-    // SAMLResponse."
-    val samlResponseFormControl: Node? = responseForm?.children("input")
-            ?.firstOrNull({ SAML_RESPONSE.equals(it.attributeText(NAME), ignoreCase = true) })
-
-    // Bindings 3.5.4 "If a “RelayState” value is to accompany the SAML protocol message, it MUST be
-    // placed in an additional **hidden** form control named RelayState within the same form with
-    // the SAML message"
-    val relayStateFormControl: Node? = responseForm?.children("input")
-            ?.firstOrNull({ RELAY_STATE.equals(it.attributeText(NAME), ignoreCase = true) })
-
-    val samlResponseString: String? = extractValue(samlResponseFormControl)
 
     // Overridden by tests if relay state was provided in the SAML request.
     override var isRelayStateGiven: Boolean = false
@@ -63,13 +52,34 @@ internal constructor(response: IdpPostResponse) : IdpPostResponse(response), Idp
         buildDom(decodedSamlResponse)
     }
 
-    val relayStateString: String? = extractValue(relayStateFormControl)
-
     override fun bindingVerifier(): BindingVerifier {
         return PostBindingVerifier(this)
     }
 
-    private fun extractValue(node: org.w3c.dom.Node?): String? {
+    override fun bindingErrorVerifier(): BindingVerifier {
+        return PostBindingErrorVerifier(this)
+    }
+
+    private fun parseAndSetFormValues() {
+        // Bindings 3.5.4 "If the message is a SAML response, then the form control MUST be named
+        // SAMLResponse."
+        samlResponseFormControl = responseForm
+                .children("input")
+                .firstOrNull({ SAML_RESPONSE.equals(it.attributeText(NAME), ignoreCase = true) })
+
+        // Bindings 3.5.4 "If a “RelayState” value is to accompany the SAML protocol message, it
+        // MUST be placed in an additional **hidden** form control named RelayState within the same
+        // form with the SAML message"
+
+        relayStateFormControl = responseForm
+                .children("input")
+                .firstOrNull({ RELAY_STATE.equals(it.attributeText(NAME), ignoreCase = true) })
+
+        samlResponse = extractValue(samlResponseFormControl)
+        relayState = extractValue(relayStateFormControl)
+    }
+
+    private fun extractValue(node: Node?): String? {
         return node?.let {
             if (isNotEmpty(it.textContent))
                 it.textContent

@@ -35,7 +35,6 @@ import org.codice.compliance.debugPrettyPrintXml
 import org.codice.compliance.recursiveChildren
 import org.codice.compliance.saml.plugin.IdpPostResponse.NAME
 import org.codice.compliance.utils.TestCommon.Companion.EXAMPLE_RELAY_STATE
-import org.codice.compliance.utils.TestCommon.Companion.IDP_ERROR_RESPONSE_REMINDER_MESSAGE
 import org.codice.compliance.utils.TestCommon.Companion.MAX_RELAY_STATE_LEN
 import org.codice.compliance.utils.TestCommon.Companion.acsUrl
 import org.codice.compliance.utils.decorators.IdpPostResponseDecorator
@@ -64,15 +63,6 @@ class PostBindingVerifier(private val response: IdpPostResponseDecorator) : Bind
         }
         verifyPostDestination()
         verifyPostForm()
-    }
-
-    /**
-     * Verify an error response (Negative path)
-     */
-    override fun verifyError() {
-        verifyHttpStatusCodeErrorResponse(response.httpStatusCode)
-        verifyNoNullsErrorResponse()
-        decodeAndVerifyErrorResponse()
     }
 
     /**
@@ -107,45 +97,6 @@ class PostBindingVerifier(private val response: IdpPostResponseDecorator) : Bind
                         SAMLBindings_3_5_4_c,
                         message = "The RelayState within the RelayState form control could not" +
                                 "be found.")
-
-        }
-    }
-
-    /**
-     * Verifies the presence of post forms and values according to the post binding rules in
-     * the binding spec (Negative path)
-     * 3.5.4 Message Encoding
-     */
-    private fun verifyNoNullsErrorResponse() {
-        with(response) {
-            if (responseForm == null || samlResponseFormControl == null)
-                throw SAMLComplianceException.create(
-                        SAMLBindings_3_5_4_a2,
-                        SAMLBindings_3_5_4_b1,
-                        message = "The form containing the SAMLResponse from control could not be" +
-                                "found." +
-                                "\n$IDP_ERROR_RESPONSE_REMINDER_MESSAGE")
-
-            if (isRelayStateGiven && relayStateFormControl == null)
-                throw SAMLComplianceException.create(
-                        SAMLBindings_3_5_4_c,
-                        message = "The RelayState form control could not be found." +
-                                "\n$IDP_ERROR_RESPONSE_REMINDER_MESSAGE")
-
-            if (samlResponse == null)
-                throw SAMLComplianceException.create(
-                        SAMLBindings_3_5_4_a2,
-                        SAMLBindings_3_5_4_b1,
-                        message = "The SAMLResponse within the SAMLResponse form control could" +
-                                "not be found.\n$IDP_ERROR_RESPONSE_REMINDER_MESSAGE")
-
-            if (isRelayStateGiven && relayState == null)
-                throw SAMLComplianceException.create(
-                        SAMLBindings_3_5_3_b,
-                        SAMLBindings_3_5_4_c,
-                        message = "The RelayState within the RelayState form control could not " +
-                                "be found.\n$IDP_ERROR_RESPONSE_REMINDER_MESSAGE")
-
         }
     }
 
@@ -164,30 +115,6 @@ class PostBindingVerifier(private val response: IdpPostResponseDecorator) : Bind
             throw SAMLComplianceException.create(
                     SAMLBindings_3_5_4_a1,
                     message = "The SAML response could not be base64 decoded.",
-                    cause = exception)
-        }
-
-        decodedMessage shouldNotBe null
-        decodedMessage.debugPrettyPrintXml("Decoded SAML Response")
-        response.decodedSamlResponse = decodedMessage
-    }
-
-    /**
-     * Verifies the encoding of the samlResponse by decoding it according to the post binding rules
-     * in the binding spec (Negative path)
-     * 3.5.4 Message Encoding
-     */
-    private fun decodeAndVerifyErrorResponse() {
-        val samlResponse = response.samlResponse
-
-        val decodedMessage: String
-        try {
-            decodedMessage = Decoder.decodePostMessage(samlResponse)
-        } catch (exception: Decoder.DecoderException) {
-            throw SAMLComplianceException.create(
-                    SAMLBindings_3_5_4_a1,
-                    message = "The SAML response could not be base64 decoded." +
-                            "\n$IDP_ERROR_RESPONSE_REMINDER_MESSAGE",
                     cause = exception)
         }
 
@@ -283,16 +210,23 @@ class PostBindingVerifier(private val response: IdpPostResponseDecorator) : Bind
                 if (!POST.equals(method))
                     throw SAMLComplianceException.create(
                             SAMLBindings_3_5_4_d2,
-                            message = "The form's method attribute [$method] does not have the " +
-                                    "expected value [$POST].")
+                            message = "The form's method attribute [$method] does not have the" +
+                                    " expected value [$POST].")
             }
+        }
+        verifySamlResponseFormControl()
+        if (response.isRelayStateGiven)
+            verifyRelayStateFormControl()
+    }
 
+    private fun verifySamlResponseFormControl() {
+        with(response) {
             samlResponseFormControl?.attributeText(NAME).let { name ->
                 if (!SAML_RESPONSE.equals(name))
                     throw SAMLComplianceException.create(
                             SAMLBindings_3_5_4_b1,
-                            message = "The SAMLResponse form control's name [$name] does not have " +
-                                    "the expected value [$SAML_RESPONSE].")
+                            message = "The SAMLResponse form control's name [$name] does not have" +
+                                    " the expected value [$SAML_RESPONSE].")
             }
 
             samlResponseFormControl?.attributeText(TYPE).let { type ->
@@ -301,22 +235,24 @@ class PostBindingVerifier(private val response: IdpPostResponseDecorator) : Bind
                             SAMLBindings_3_5_4_a2,
                             message = "The SAMLResponse form control was not hidden.")
             }
+        }
+    }
 
-            if (isRelayStateGiven) {
-                relayStateFormControl?.attributeText(NAME).let { name ->
-                    if (!RELAY_STATE.equals(name))
-                        throw SAMLComplianceException.create(
-                                SAMLBindings_3_5_4_c,
-                                message = "The RelayState form control's name [$name] does not " +
-                                        "have the expected value [$RELAY_STATE].")
-                }
-                relayStateFormControl?.attributeText(TYPE).let { type ->
-                    if (!HIDDEN.equals(type, ignoreCase = true))
-                        throw SAMLComplianceException.create(
-                                SAMLBindings_3_5_4_c,
-                                message = "The RelayState form control's type [$type] does not " +
-                                        "have the expected value [$HIDDEN].")
-                }
+    private fun verifyRelayStateFormControl() {
+        with (response) {
+            relayStateFormControl?.attributeText(NAME).let { name ->
+                if (!RELAY_STATE.equals(name))
+                    throw SAMLComplianceException.create(
+                            SAMLBindings_3_5_4_c,
+                            message = "The RelayState form control's name [$name] does not" +
+                                    " have the expected value [$RELAY_STATE].")
+            }
+            relayStateFormControl?.attributeText(TYPE).let { type ->
+                if (!HIDDEN.equals(type, ignoreCase = true))
+                    throw SAMLComplianceException.create(
+                            SAMLBindings_3_5_4_c,
+                            message = "The RelayState form control's type [$type] does not" +
+                                    " have the expected value [$HIDDEN].")
             }
         }
     }

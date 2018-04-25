@@ -25,6 +25,7 @@ interface IdpResponseDecorator {
     val responseDom: Node
 
     fun bindingVerifier(): BindingVerifier
+    fun bindingErrorVerifier(): BindingVerifier
 }
 
 fun IdpRedirectResponse.decorate(): IdpRedirectResponseDecorator {
@@ -36,5 +37,5 @@ fun IdpPostResponse.decorate(): IdpPostResponseDecorator {
 }
 
 internal fun buildDom(inputXml: String): Node {
-    return Common.buildDom(inputXml)
+    return Common.buildDomFromXml(inputXml)
 }

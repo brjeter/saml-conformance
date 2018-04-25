@@ -58,7 +58,7 @@ class RedirectSSOErrorTest : StringSpec() {
             val response = sendRedirectAuthnRequest(queryParams)
 
             val idpResponse = parseErrorResponse(response)
-            idpResponse.bindingVerifier().verifyError()
+            idpResponse.bindingErrorVerifier().verify()
 
             val responseDom = idpResponse.responseDom
             CoreVerifier.verifyErrorStatusCode(responseDom, samlErrorCode = SAMLBindings_3_4_3_a1,
@@ -82,7 +82,7 @@ class RedirectSSOErrorTest : StringSpec() {
             val response = sendRedirectAuthnRequest(queryParams)
 
             val idpResponse = parseErrorResponse(response)
-            idpResponse.bindingVerifier().verifyError()
+            idpResponse.bindingErrorVerifier().verify()
 
             val responseDom = idpResponse.responseDom
             CoreVerifier.verifyErrorStatusCode(responseDom, samlErrorCode = SAMLBindings_3_4_3_a1,
@@ -99,7 +99,7 @@ class RedirectSSOErrorTest : StringSpec() {
             BindingVerifier.verifyHttpStatusCode(response.statusCode)
 
             val idpResponse = parseErrorResponse(response)
-            idpResponse.bindingVerifier().verifyError()
+            idpResponse.bindingErrorVerifier().verify()
 
             val responseDom = idpResponse.responseDom
             CoreVerifier.verifyErrorStatusCode(responseDom, samlErrorCode = SAMLProfiles_4_1_4_1_a,
@@ -123,7 +123,7 @@ class RedirectSSOErrorTest : StringSpec() {
             BindingVerifier.verifyHttpStatusCode(response.statusCode)
 
             val idpResponse = parseErrorResponse(response)
-            idpResponse.bindingVerifier().verifyError()
+            idpResponse.bindingErrorVerifier().verify()
 
             val responseDom = idpResponse.responseDom
             CoreVerifier.verifyErrorStatusCode(responseDom, samlErrorCode = SAMLProfiles_4_1_4_1_b,
@@ -145,7 +145,7 @@ class RedirectSSOErrorTest : StringSpec() {
             BindingVerifier.verifyHttpStatusCode(response.statusCode)
 
             val idpResponse = parseErrorResponse(response)
-            idpResponse.bindingVerifier().verifyError()
+            idpResponse.bindingErrorVerifier().verify()
 
             val responseDom = idpResponse.responseDom
             // DDF returns a valid response to the incorrect url
@@ -164,7 +164,7 @@ class RedirectSSOErrorTest : StringSpec() {
             BindingVerifier.verifyHttpStatusCode(response.statusCode)
 
             val idpResponse = parseErrorResponse(response)
-            idpResponse.bindingVerifier().verifyError()
+            idpResponse.bindingErrorVerifier().verify()
 
             val responseDom = idpResponse.responseDom
             CoreVerifier.verifyErrorStatusCode(responseDom, samlErrorCode = SAMLCore_3_2_1_e,

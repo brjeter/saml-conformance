@@ -34,11 +34,10 @@ import org.codice.compliance.SAMLBindings_3_4_6_a
 import org.codice.compliance.SAMLBindings_3_5_5_2_a
 import org.codice.compliance.SAMLComplianceException
 import org.codice.compliance.attributeNode
-import org.codice.compliance.recursiveChildren
 import org.codice.compliance.children
 import org.codice.compliance.debugPrettyPrintXml
+import org.codice.compliance.recursiveChildren
 import org.codice.compliance.utils.TestCommon.Companion.EXAMPLE_RELAY_STATE
-import org.codice.compliance.utils.TestCommon.Companion.IDP_ERROR_RESPONSE_REMINDER_MESSAGE
 import org.codice.compliance.utils.TestCommon.Companion.MAX_RELAY_STATE_LEN
 import org.codice.compliance.utils.TestCommon.Companion.acsUrl
 import org.codice.compliance.utils.TestCommon.Companion.idpMetadata
@@ -80,15 +79,6 @@ class RedirectBindingVerifier(private val response: IdpRedirectResponseDecorator
     }
 
     /**
-     * Verify an error response (Negative path)
-     */
-    override fun verifyError() {
-        verifyHttpRedirectStatusCodeErrorResponse()
-        verifyNoNullsErrorResponse()
-        decodeAndVerifyErrorResponse()
-    }
-
-    /**
      * Verifies the http status code of the response according to the redirect binding rules in the
      * binding spec
      * 3.4.6 Error Reporting
@@ -104,27 +94,6 @@ class RedirectBindingVerifier(private val response: IdpRedirectResponseDecorator
                     actual = response.httpStatusCode.toString(),
                     expected = "${HttpStatusCodes.STATUS_CODE_FOUND} or " +
                             HttpStatusCodes.STATUS_CODE_SEE_OTHER
-            )
-        }
-    }
-
-    /**
-     * Verifies the http status code of the response according to the redirect binding rules in the
-     * binding spec (Negative path)
-     * 3.4.6 Error Reporting
-     */
-    private fun verifyHttpRedirectStatusCodeErrorResponse() {
-        // TODO remove the 200 check when we change HTTP status code to expect 302/303
-        if (response.httpStatusCode != HttpStatusCodes.STATUS_CODE_OK
-                && response.httpStatusCode != HttpStatusCodes.STATUS_CODE_FOUND
-                && response.httpStatusCode != HttpStatusCodes.STATUS_CODE_SEE_OTHER) {
-            throw SAMLComplianceException.createWithPropertyMessage(
-                    SAMLBindings_3_4_6_a,
-                    property = "HTTP Status Code",
-                    actual = response.httpStatusCode.toString(),
-                    expected = "${HttpStatusCodes.STATUS_CODE_FOUND} or " +
-                            HttpStatusCodes.STATUS_CODE_SEE_OTHER +
-                            "\n$IDP_ERROR_RESPONSE_REMINDER_MESSAGE"
             )
         }
     }
@@ -160,46 +129,6 @@ class RedirectBindingVerifier(private val response: IdpRedirectResponseDecorator
                 throw SAMLComplianceException.create(
                         SAMLBindings_3_4_3_b1,
                         message = "RelayState not found.")
-            }
-        }
-    }
-
-    /**
-     * Verifies the presence of redirect parameters according to the redirect binding rules in the
-     * binding spec (Negative path)
-     * 3.4.4 Message Encoding
-     */
-    private fun verifyNoNullsErrorResponse() {
-        with(response) {
-            if (isUrlNull) {
-                throw SAMLComplianceException.create(
-                        SAMLBindings_3_4_4_a,
-                        message = "Url not found." +
-                                "\n$IDP_ERROR_RESPONSE_REMINDER_MESSAGE")
-            }
-            if (isPathNull) {
-                throw SAMLComplianceException.create(
-                        SAMLBindings_3_4_4_a,
-                        message = "Path not found." +
-                                "\n$IDP_ERROR_RESPONSE_REMINDER_MESSAGE")
-            }
-            if (isParametersNull) {
-                throw SAMLComplianceException.create(
-                        SAMLBindings_3_4_4_a,
-                        message = "Parameters not found." +
-                                "\n$IDP_ERROR_RESPONSE_REMINDER_MESSAGE")
-            }
-            if (samlResponse == null) {
-                throw SAMLComplianceException.create(
-                        SAMLBindings_3_4_4_a,
-                        message = "SAMLResponse not found." +
-                                "\n$IDP_ERROR_RESPONSE_REMINDER_MESSAGE")
-            }
-            if (isRelayStateGiven && relayState == null) {
-                throw SAMLComplianceException.create(
-                        SAMLBindings_3_4_3_b1,
-                        message = "RelayState not found." +
-                                "\n$IDP_ERROR_RESPONSE_REMINDER_MESSAGE")
             }
         }
     }
@@ -246,63 +175,6 @@ class RedirectBindingVerifier(private val response: IdpRedirectResponseDecorator
                     else -> throw SAMLComplianceException.create(SAMLBindings_3_4_4_1_a,
                             SAMLBindings_3_4_4_1,
                             message = "Something went wrong with the SAML response.",
-                            cause = e)
-                }
-            }
-        } else throw UnsupportedOperationException("This test suite only supports DEFLATE " +
-                "encoding currently.")
-
-        decodedMessage.debugPrettyPrintXml("Decoded SAML Response")
-        response.decodedSamlResponse = decodedMessage
-    }
-
-    /**
-     * Verifies the encoding of the samlResponse by decoding it according to the redirect binding
-     * rules in the binding spec (Negative path)
-     * 3.4.4.1 Deflate Encoding
-     */
-    @Suppress("ComplexMethod" /* Complexity due to nested `when` is acceptable */)
-    private fun decodeAndVerifyErrorResponse() {
-        val samlResponse = response.samlResponse
-        val samlEncoding = response.samlEncoding
-        val decodedMessage: String
-
-        /**
-         * A query string parameter named SAMLEncoding is reserved to identify the encoding
-         * mechanism used. If this parameter is omitted, then the value is assumed to be
-         * urn:oasis:names:tc:SAML:2.0:bindings:URL-Encoding:DEFLATE.
-         */
-        decodedMessage = if (samlEncoding == null ||
-                samlEncoding.equals("urn:oasis:names:tc:SAML:2.0:bindings:URL-Encoding:DEFLATE")) {
-            try {
-                Decoder.decodeAndInflateRedirectMessage(samlResponse)
-            } catch (e: Decoder.DecoderException) {
-                when (e.inflErrorCode) {
-                    ERROR_URL_DECODING ->
-                        throw SAMLComplianceException.create(SAMLBindings_3_4_4_1_b1,
-                                message = "Could not url decode the SAML response." +
-                                        "\n$IDP_ERROR_RESPONSE_REMINDER_MESSAGE",
-                                cause = e)
-                    ERROR_BASE64_DECODING ->
-                        throw SAMLComplianceException.create(SAMLBindings_3_4_4_1_b1,
-                                message = "Could not base64 decode the SAML response." +
-                                        "\n$IDP_ERROR_RESPONSE_REMINDER_MESSAGE",
-                                cause = e)
-                    ERROR_INFLATING -> throw SAMLComplianceException.create(SAMLBindings_3_4_4_1_a1,
-                            SAMLBindings_3_4_4_1,
-                            message = "Could not inflate the SAML response." +
-                                    "\n$IDP_ERROR_RESPONSE_REMINDER_MESSAGE",
-                            cause = e)
-                    LINEFEED_OR_WHITESPACE ->
-                        throw SAMLComplianceException.create(SAMLBindings_3_4_4_1_a2,
-                                message = "There were linefeeds or whitespace in the SAML " +
-                                        "response." +
-                                        "\n$IDP_ERROR_RESPONSE_REMINDER_MESSAGE",
-                                cause = e)
-                    else -> throw SAMLComplianceException.create(SAMLBindings_3_4_4_1_a,
-                            SAMLBindings_3_4_4_1,
-                            message = "Something went wrong with the SAML response." +
-                                    "\n$IDP_ERROR_RESPONSE_REMINDER_MESSAGE",
                             cause = e)
                 }
             }

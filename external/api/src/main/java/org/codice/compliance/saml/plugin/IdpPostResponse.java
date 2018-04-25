@@ -1,10 +1,10 @@
 /**
  * Copyright (c) Codice Foundation
- * <p>
+ *
  * <p>This is free software: you can redistribute it and/or modify it under the terms of the GNU
  * Lesser General Public License as published by the Free Software Foundation, either version 3 of
  * the License, or any later version.
- * <p>
+ *
  * <p>This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
  * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU Lesser General Public License for more details. A copy of the GNU Lesser General Public
@@ -25,14 +25,19 @@ import static org.apache.cxf.rs.security.saml.sso.SSOConstants.SAML_RESPONSE;
  * This class is the return type for methods of the {@code IdpSSOResponder} interface for the POST
  * Binding. Once the user implemented portion finishes its interaction with the IdP under testing,
  * it should return an {@code IdpPostResponse}.
+ *
  * <p>
+ *
  * <p>An {@code IdpPostResponse} is created by passing in the resultant RestAssured {@code Response}
  * to its constructor.
+ *
  * <p>
+ *
  * <p>Example: {@code return IdpPostResponse(restAssuredResponse); }
  */
 public class IdpPostResponse extends IdpResponse {
 
+  private static final String VALUE = "value";
   public static final String NAME = "name";
   protected Response restAssuredResponse;
 
@@ -52,16 +57,21 @@ public class IdpPostResponse extends IdpResponse {
     super(response);
     this.restAssuredResponse = response.restAssuredResponse;
     responseForm = response.responseForm;
+    samlResponseFormControl = response.samlResponseFormControl;
+    relayStateFormControl = response.relayStateFormControl;
   }
 
   public Node responseForm;
+  public Node samlResponseFormControl;
+  public Node relayStateFormControl;
 
   private Node extractResponseForm(String responseBody) {
-    NodeList domChildren = Common.buildDom(responseBody).getChildNodes();
+    Node dom = Common.buildDomFromHtml(responseBody);
+    NodeList domChildren = dom.getChildNodes();
 
     for (int i = 0; i < domChildren.getLength(); i++) {
       Node node = domChildren.item(i);
-      if (node.getLocalName().equals("form") && hasSamlResponseFormControl(node)) {
+      if (isAForm(node) && hasSamlResponseFormControl(node)) {
         return node;
       }
     }
@@ -69,9 +79,13 @@ public class IdpPostResponse extends IdpResponse {
     return null;
   }
 
+  private boolean isAForm(Node node) {
+    return node.getLocalName() != null && node.getLocalName().equals("form");
+  }
+
   private boolean hasSamlResponseFormControl(Node node) {
     NamedNodeMap attributes = node.getAttributes();
-    return attributes != null &&
-            attributes.getNamedItem(NAME).getNodeValue().equalsIgnoreCase(SAML_RESPONSE);
+    return attributes != null
+        && attributes.getNamedItem(NAME).getNodeValue().equalsIgnoreCase(SAML_RESPONSE);
   }
 }

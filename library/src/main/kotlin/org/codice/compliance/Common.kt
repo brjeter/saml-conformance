@@ -19,12 +19,11 @@ import org.codice.security.saml.EntityInformation
 import org.codice.security.saml.IdpMetadata
 import org.codice.security.saml.SPMetadataParser
 import org.codice.security.saml.SamlProtocol
+import org.jsoup.Jsoup
+import org.jsoup.helper.W3CDom
 import org.w3c.dom.Node
-import org.w3c.tidy.Tidy
 import java.io.File
-import java.io.StringWriter
 import java.nio.charset.StandardCharsets
-import java.util.Properties
 import javax.xml.parsers.DocumentBuilderFactory
 import javax.xml.transform.OutputKeys
 import javax.xml.transform.Transformer
@@ -87,31 +86,22 @@ class Common {
         }
 
         /**
-         * Generates an xml document from an input string
+         * Generates an xml document from an input xml string
          */
-        @JvmStatic
-        fun buildDom(inputXml: String): Node {
+        fun buildDomFromXml(inputXml: String): Node {
             return DocumentBuilderFactory.newInstance().apply {
                 isNamespaceAware = true
             }.newDocumentBuilder()
-                    .parse(tidy(inputXml).byteInputStream())
+                    .parse(inputXml.byteInputStream())
                     .documentElement
         }
 
-        private fun tidy(input: String): String {
-            if (!"""(?i:.*<html.*)""".toRegex(RegexOption.DOT_MATCHES_ALL).matches(input)) {
-                return input
-            }
-            input.byteInputStream().use { inStr ->
-                return StringWriter().use { outStr ->
-                    Tidy().apply {
-                        setConfigurationFromProps(Properties().apply {
-                            setProperty("doctype", "omit")
-                        })
-                    }.parse(inStr, outStr)
-                    outStr.toString()
-                }
-            }
+        /**
+         * Generates an xml document from an input html string
+         */
+        @JvmStatic
+        fun buildDomFromHtml(inputHtml: String): Node {
+            return W3CDom().fromJsoup(Jsoup.parse(inputHtml)).documentElement
         }
     }
 }
@@ -132,7 +122,7 @@ fun String.prettyPrintXml(): String {
         val escapedString = this.replace("""&([^;]+(?!(?:\\\\w|;)))""".toRegex(),
                 { match -> "&amp;${match.value.removePrefix("&")}" })
 
-        Common.buildDom(escapedString).prettyPrintXml()
+        Common.buildDomFromXml(escapedString).prettyPrintXml()
     } catch (e: Exception) {
         Log.debugWithSupplier { "'$this' is not valid XML." }
         this
