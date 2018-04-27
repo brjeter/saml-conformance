@@ -19,8 +19,6 @@ import com.jayway.restassured.RestAssured
 import com.jayway.restassured.builder.RequestSpecBuilder
 import com.jayway.restassured.response.Response
 import org.codice.compliance.Common
-import org.codice.compliance.saml.plugin.IdpPostResponse
-import org.codice.compliance.saml.plugin.IdpRedirectResponse
 import org.codice.compliance.saml.plugin.IdpSSOResponder
 import org.codice.security.saml.SamlProtocol
 import org.kohsuke.MetaInfServices
@@ -33,44 +31,12 @@ class DDFIdpSSOResponderProvider : IdpSSOResponder {
 
     // TODO When DDF is fixed to return a POST SSO response, change the return type to
     // `IdpPostResponse` and modify this method implementation accordingly
-    override fun getRedirectResponse(originalResponse: Response): IdpRedirectResponse {
-
-        val response = parseResponseAndSendRequest(originalResponse)
-
-        /*************************
-         * <html>
-         * <head>
-         * ...
-         * <script type="text/javascript">
-         *  window.onload = function () {
-         *      window.setTimeout(function () {
-         *          window.setInterval(function () {
-         *              var encoded = "SAMLResponse HERE";
-         *              window.location.replace(encoded);
-         *          }, 2000);
-         *      }, 100);
-         *  }
-         * </script>
-         * ...
-         ************************/
-
-        val script = response
-                .then()
-                .extract()
-                .htmlPath()
-                .getNode("html")
-                .getNode("head")
-                .getNode("script")
-                .value()
-
-        return IdpRedirectResponse.Builder().apply {
-            httpStatusCode(response.statusCode)
-            url(REDIR_REGEX.find(script)?.groups?.get(1)?.value)
-        }.build()
+    override fun getResponseForRedirectRequest(originalResponse: Response): Response {
+        return parseResponseAndSendRequest(originalResponse)
     }
 
-    override fun getPostResponse(originalResponse: Response): IdpPostResponse {
-        return IdpPostResponse(parseResponseAndSendRequest(originalResponse))
+    override fun getResponseForPostRequest(originalResponse: Response): Response {
+        return parseResponseAndSendRequest(originalResponse)
     }
 
     /**

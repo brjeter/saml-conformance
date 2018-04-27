@@ -26,48 +26,27 @@ public interface IdpSSOResponder {
    * The tests will send an AuthnRequest to the IdP using Redirect binding. Then the tests will hand
    * the HTTP response to this method. Then this method is responsible for handling the
    * implementation-dependent interactions that need to occur before successfully authenticating a
-   * user and getting the SAML response. Once the SAML response is received, this method should then
-   * build up the appropriate object and return it to the tests.
+   * user and getting the SAML response. Once the SAML response is received, this method should
+   * return the RestAssured Response object that contains it.
    *
    * @param originalResponse - the original {@code RestAssured} response from the initial REDIRECT
    *     authn request
-   * @return The response as an {@code IdpRedirectResponse}. The internal builder should be called
-   *     to build the response object:
-   *     <pre>{@code
-   * return new IdpRedirectResponse.Builder()
-   * .httpStatusCode(exampleStatusCode)
-   * .url(exampleUrl)
-   * .build();
-   * }
-   * where {@code exampleStatusCode} is the http status code returned by the IdP
-   * where {@code exampleUrl} is the url in the "Location" header returned by the IdP
-   * </pre>
+   * @return The {@code RestAssured} response containing the SAML response. </pre>
    */
   // TODO When DDF is fixed to return a POST SSO response, change the return type to
   // `IdpPostResponse`
-  IdpResponse getRedirectResponse(Response originalResponse);
+  Response getResponseForRedirectRequest(Response originalResponse);
 
   /**
    * The tests will send an AuthnRequest to the IdP using POST binding. Then the tests will hand the
    * HTTP response to this method. Then this method is responsible for handling the
    * implementation-dependent interactions that need to occur before successfully authenticating a
-   * user and getting the SAML response. Once the SAML response is received, this method should then
-   * build up the appropriate object and return it to the tests.
+   * user and getting the SAML response. Once the SAML response is received, this method should
+   * return the RestAssured Response object that contains it.
    *
    * @param originalResponse - the original {@code RestAssured} response from the initial POST authn
    *     request
-   * @return The response as an {@code IdpPostResponse}. The internal builder should be called to
-   *     build the response object:
-   *     <pre>{@code
-   * return new IdpPostResponse.Builder()
-   * .httpStatusCode(exampleStatusCode)
-   * .samlForm(exampleSamlForm)
-   * .build();
-   * }
-   * where {@code exampleStatusCode} is the http status code returned by the IdP
-   * where {@code exampleSamlForm} is the wrapping form containing the samlResponse form control
-   * returned by the IdP
-   * </pre>
+   * @return The {@code RestAssured} response containing the SAML response. </pre>
    */
-  IdpResponse getPostResponse(Response originalResponse);
+  Response getResponseForPostRequest(Response originalResponse);
 }
