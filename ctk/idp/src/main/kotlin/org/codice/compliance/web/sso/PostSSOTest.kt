@@ -43,23 +43,23 @@ class PostSSOTest : StringSpec() {
         RestAssured.useRelaxedHTTPSValidation()
 
         "POST AuthnRequest Test" {
-            val authnRequest = createDefaultAuthnRequest(HTTP_POST)
-            val encodedRequest = signAndEncodePostRequestToString(authnRequest)
-            val response = sendPostAuthnRequest(encodedRequest)
-            BindingVerifier.verifyHttpStatusCode(response.statusCode)
+//            val authnRequest = createDefaultAuthnRequest(HTTP_POST)
+//            val encodedRequest = signAndEncodePostRequestToString(authnRequest)
+//            val response = sendPostAuthnRequest(encodedRequest)
+//            BindingVerifier.verifyHttpStatusCode(response.statusCode)
 
             val finalHttpResponse =
-                    getImplementation(IdpSSOResponder::class).getResponseForPostRequest(response)
-            val samlResponseDom = finalHttpResponse.getBindingVerifier().decodeAndVerify()
-
-            CoreAuthnRequestProtocolVerifier(authnRequest, samlResponseDom).apply {
-                verify()
-                verifyAssertionConsumerService(finalHttpResponse)
-            }
-            SingleSignOnProfileVerifier(samlResponseDom).apply {
-                verify()
-                verifyBinding(finalHttpResponse)
-            }
+                    getImplementation(IdpSSOResponder::class).testMethod()
+//            val samlResponseDom = finalHttpResponse.getBindingVerifier().decodeAndVerify()
+//
+//            CoreAuthnRequestProtocolVerifier(authnRequest, samlResponseDom).apply {
+//                verify()
+//                verifyAssertionConsumerService(finalHttpResponse)
+//            }
+//            SingleSignOnProfileVerifier(samlResponseDom).apply {
+//                verify()
+//                verifyBinding(finalHttpResponse)
+//            }
         }
 
         "POST AuthnRequest With Relay State Test" {

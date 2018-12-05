@@ -19,13 +19,9 @@ import org.codice.compliance.web.slo.RedirectSLOTest
 import org.codice.compliance.web.slo.error.PostSLOErrorTest
 import org.codice.compliance.web.slo.error.RedirectSLOErrorTest
 import org.codice.compliance.web.sso.PostSSOTest
-import org.codice.compliance.web.sso.RedirectSSOTest
 import org.codice.compliance.web.sso.error.PostSSOErrorTest
 import org.codice.compliance.web.sso.error.RedirectSSOErrorTest
-import org.codice.ctk.Runner.Companion.SLO_BASIC_TESTS
-import org.codice.ctk.Runner.Companion.SLO_ERROR_TESTS
 import org.codice.ctk.Runner.Companion.SSO_BASIC_TESTS
-import org.codice.ctk.Runner.Companion.SSO_ERROR_TESTS
 import org.fusesource.jansi.Ansi.ansi
 import org.junit.platform.engine.TestExecutionResult
 import org.junit.platform.engine.discovery.DiscoverySelectors.selectClass
@@ -41,8 +37,7 @@ import java.io.PrintWriter
 
 private class Runner {
     companion object {
-        val SSO_BASIC_TESTS = arrayOf(selectClass(PostSSOTest::class.java),
-                selectClass(RedirectSSOTest::class.java))
+        val SSO_BASIC_TESTS = arrayOf(selectClass(PostSSOTest::class.java))
         val SSO_ERROR_TESTS = arrayOf(selectClass(RedirectSSOErrorTest::class.java),
                 selectClass(PostSSOErrorTest::class.java))
         val SLO_BASIC_TESTS = arrayOf(selectClass(PostSLOTest::class.java),
@@ -100,10 +95,7 @@ private fun createParser(): Parser {
 @Suppress("SpreadOperator")
 private fun launchTests() {
     val request = LauncherDiscoveryRequestBuilder.request()
-            .selectors(*SSO_BASIC_TESTS,
-                    *SSO_ERROR_TESTS,
-                    *SLO_BASIC_TESTS,
-                    *SLO_ERROR_TESTS)
+            .selectors(*SSO_BASIC_TESTS)
             .build()
 
     val summaryGeneratingListener = SummaryGeneratingListener()

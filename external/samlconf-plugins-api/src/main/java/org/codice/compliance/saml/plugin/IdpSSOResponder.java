@@ -15,6 +15,8 @@ import io.restassured.response.Response;
  */
 public interface IdpSSOResponder {
 
+  void testMethod();
+
   /**
    * After the tests send an AuthnRequest to the IdP using the Redirect binding, they will hand the
    * HTTP response they get to this method.

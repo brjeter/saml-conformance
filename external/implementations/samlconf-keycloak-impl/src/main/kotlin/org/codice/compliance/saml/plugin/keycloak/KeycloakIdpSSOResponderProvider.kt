@@ -13,6 +13,9 @@ import org.kohsuke.MetaInfServices
 
 @MetaInfServices
 class KeycloakIdpSSOResponderProvider : IdpSSOResponder {
+    override fun testMethod() {
+        TODO("not implemented")
+    }
 
     override fun getResponseForRedirectRequest(originalResponse: Response): Response {
         return postUserForm(originalResponse)

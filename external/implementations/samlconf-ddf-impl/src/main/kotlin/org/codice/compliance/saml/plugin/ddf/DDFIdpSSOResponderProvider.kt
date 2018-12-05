@@ -18,6 +18,10 @@ import org.kohsuke.MetaInfServices
 
 @MetaInfServices
 class DDFIdpSSOResponderProvider : IdpSSOResponder {
+    override fun testMethod() {
+        TODO("not implemented")
+    }
+
     override fun getResponseForRedirectRequest(originalResponse: Response): Response {
         return parseResponseAndSendRequest(originalResponse)
     }

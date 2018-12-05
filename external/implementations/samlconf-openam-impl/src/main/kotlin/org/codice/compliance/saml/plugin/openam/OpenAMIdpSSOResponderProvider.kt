@@ -14,9 +14,15 @@ import org.kohsuke.MetaInfServices
 
 @MetaInfServices
 class OpenAMIdpSSOResponderProvider : IdpSSOResponder {
+    override fun testMethod() {
+        val authJson = Klaxon().parse<AuthJson>(
+                """{"authId":"test","template":"testtemp","header":"testHead"}""")
+        System.out.println("\n\nAUTHJSON:\n${authJson}\n\n")
+    }
+
     override fun getResponseForPostRequest(originalResponse: Response): Response {
-        //  return doStuff(originalResponse)
-        return originalResponse
+        return doStuff(originalResponse)
+//        return originalResponse
     }
 
     override fun getResponseForRedirectRequest(originalResponse: Response): Response {
@@ -24,7 +30,7 @@ class OpenAMIdpSSOResponderProvider : IdpSSOResponder {
         //To change body of created functions use File | Settings | File Templates.
     }
 
-    fun doStuff(response: Response?): Response? {
+    fun doStuff(response: Response): Response {
 
         val realm = "SamlCTK"
         val authURL = "/OpenAM-14.1.13/json/realms/root/realms/$realm/authenticate"
@@ -42,15 +48,12 @@ class OpenAMIdpSSOResponderProvider : IdpSSOResponder {
         return response
     }
 }
-fun main(args: Array<String>) {
-    OpenAMIdpSSOResponderProvider().doStuff(null)
-}
 
 data class AuthJson(
     val authId: String,
     val template: String,
     val header: String,
-    val callbacks: List<CBNodes>
+    val callbacks: List<CBNodes> = emptyList()
 )
 
 data class CBNodes(val type: String, val output: NodeData)
